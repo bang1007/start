@@ -1,0 +1,257 @@
+
+#include <Servo.h>
+
+#include <ESP8266WiFi.h>
+
+#include <ESP8266WebServer.h>
+
+#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
+
+
+const char* ssid = ""; // 와이파이 주소
+
+const char* pass = ""; // 와이파이 비밀번호 
+
+
+
+ESP8266WebServer server(80);
+
+Servo myservo;
+
+int SWITCH;
+
+int X;
+
+int Delay;
+
+int Delay2;
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+void setup() {
+  pinMode(12, INPUT);
+  pinMode(16, INPUT);
+
+  lcd.init();
+  lcd.backlight();
+
+  Serial.begin(115200);
+
+  Serial.println(".");
+  
+  WiFi.begin(ssid, pass);
+
+  while (WiFi.status() != WL_CONNECTED) {
+
+    delay(500);
+
+    Serial.print(".");
+
+  }
+
+
+
+  Serial.println("");
+
+  Serial.print("Connected to ");
+
+  Serial.println(ssid);
+
+  Serial.print("IP address: ");
+
+  Serial.println(WiFi.localIP());
+
+
+
+  server.on("/", []() {
+
+    server.send(200, "text/html", "<h1>MOTOR CONTROL</h1><h2><FONT SIZE=5><a href=\"/on\">ON</a><hr><a href=\"/off\">OFF</a><hr><a href=\"/timer\">TIMER</a><hr><a href=\"/Delay\">Delay</a>&nbsp&nbsp&nbsp<a href=\"/Delay2\">Delay2</a></FONT></h2>");
+
+  });
+
+
+
+  server.on("/s", []() {
+
+    String sdegree = server.arg("degree");
+
+    int degree = sdegree.toInt();
+
+    Serial.print("degree: ");
+
+    Serial.println(degree);
+
+    myservo.write(degree);
+
+    server.send(200, "text/plain", String(degree, DEC));
+
+  });
+
+
+
+  server.on("/on", []() {
+
+    Serial.println("ON");
+
+    myservo.write(90);
+
+    delay(1000);
+
+    myservo.write(20);
+
+    server.send(200, "text/html", "<h2><FONT SIZE=5>ON! : <a href=\"/off\">OFF</a> or <a href=\"/timer\">TIMER</a> or <a href=\"/Delay\">Delay</a>&nbsp&nbsp&nbsp<a href=\"/Delay2\">Delay2</a> or URL : /s?degree=90 </FONT></h2>");
+    lcd.setCursor(8,1);            
+    lcd.print("ON"); 
+  });
+
+
+
+  server.on("/off", []() {
+
+    Serial.println("OFF");
+
+    myservo.write(0);
+
+    server.send(200, "text/html", "<h2><FONT SIZE=5>OFF! : <a href=\"/on\">ON</a> or <a href=\"/timer\">TIMER</a> or <a href=\"/Delay\">Delay</a>&nbsp&nbsp&nbsp<a href=\"/Delay2\">Delay2</a> or URL : /s?degree=90 </FONT></h2>");
+    lcd.setCursor(8,1);            
+    lcd.print("OFF");
+  });
+
+  server.on("/timer", []() {
+
+    Serial.println("TIMER");
+
+    myservo.write(90);
+
+    delay(1000);
+
+    myservo.write(20);
+
+    delay(2000);
+    
+    myservo.write(90);
+
+    delay(1000);
+
+    myservo.write(20);
+
+    delay(3000);
+
+    myservo.write(90);
+
+    delay(1000);
+
+    myservo.write(20);
+
+
+    server.send(200, "text/html", "<h2><FONT SIZE=5>TIMER! : <a href=\"/on\">ON</a> or <a href=\"/off\">OFF</a> or <a href=\"/Delay\">Delay</a>&nbsp&nbsp&nbsp<a href=\"/Delay2\">Delay2</a> or URL : /s?degree=90 </FONT></h2>");
+    lcd.setCursor(8,1);            
+    lcd.print("TIMER");
+  });
+
+  server.on("/Delay", []() {
+
+    Serial.println("Delay");
+
+    myservo.write(90);
+
+    delay(Delay);
+
+    myservo.write(20);
+
+    server.send(200, "text/html", "<h2><FONT SIZE=5>Delay! : <a href=\"/on\">ON</a> or <a href=\"/off\">OFF</a> or <a href=\"/timer\">TIMER</a> or <a href=\"/Delay2\">Delay2</a> or URL : /s?degree=90 </FONT></h2>");
+    lcd.setCursor(8,1);            
+    lcd.print("Delay   ");
+  });
+
+  server.on("/Delay2", []() {
+
+    Serial.println("Delay2");
+
+    myservo.write(90);
+
+    delay(1000);
+
+    myservo.write(20);
+
+    delay(Delay2);
+
+    myservo.write(90);
+
+    delay(1000);
+
+    myservo.write(20);
+
+
+    server.send(200, "text/html", "<h2><FONT SIZE=5>Delay2! : <a href=\"/on\">ON</a> or <a href=\"/off\">OFF</a> or <a href=\"/timer\">TIMER</a> or <a href=\"/Delay\">Delay</a> or URL : /s?degree=90 </FONT></h2>");
+    lcd.setCursor(8,1);            
+    lcd.print("Delay2  ");
+  });
+
+
+
+  server.begin();
+
+  Serial.println("HTTP server started");
+
+
+
+  myservo.attach(14);   
+
+  myservo.write(0);
+
+
+}
+
+
+
+void loop(void) {
+
+  server.handleClient();
+
+  lcd.setCursor(0,0);
+  lcd.print("  Now mode is  "); 
+
+  if(digitalRead(16) == HIGH) {
+     X += 1;
+    delay(1000); // Wait for 1000 millisecond(s)
+    Serial.print("now X is ");
+    Serial.println(X);
+    lcd.setCursor(0,1);            
+    lcd.clear();
+  }
+  if (digitalRead(12) == HIGH) {
+    if (X == 1) {
+      Delay += 500;
+      delay(1000); // Wait for 1000 millisecond(s)
+      Delay2 = 0;
+      Serial.print("now Delay is ");
+      Serial.println(Delay);
+      lcd.setCursor(0,1);            
+      lcd.print("D");
+      lcd.setCursor(2,1);            
+      lcd.print( Delay);
+    } else {
+      Delay2 += 500;
+      delay(1000); // Wait for 1000 millisecond(s)
+      Delay = 0;
+      Serial.print("now Delay2 is ");
+      Serial.println(Delay2);
+      lcd.setCursor(0,1);            
+      lcd.print("D2");
+      lcd.setCursor(3,1);            
+      lcd.print(Delay2);
+    }
+  }
+  if (Delay > 2000) {
+    Delay = 0;
+    }
+  if (Delay2 > 2000) {
+    Delay2 = 0;
+  }
+  if (X >= 2) {
+    X = 0;
+  }
+  }
+   
